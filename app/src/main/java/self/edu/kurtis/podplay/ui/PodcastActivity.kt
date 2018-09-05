@@ -37,6 +37,7 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
         setupViewModels()
         updateControls()
         handleIntent(intent)
+        addBackStackListener()
     }
 
     override fun onCreateOptionsMenu(menu: Menu) : Boolean {
@@ -48,6 +49,10 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
         val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
 
         searchView.setSearchableInfo(searchManager.getSearchableInfo(componentName))
+
+        if (supportFragmentManager.backStackEntryCount > 0) {
+            podcastRecyclerView.visibility = View.INVISIBLE
+        }
 
         if (podcastRecyclerView.visibility == View.INVISIBLE) {
             searchMenuItem.isVisible = false
@@ -149,5 +154,13 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
                 .setPositiveButton(getString(R.string.ok_button), null)
                 .create()
                 .show()
+    }
+
+    private fun addBackStackListener() {
+        supportFragmentManager.addOnBackStackChangedListener {
+            if (supportFragmentManager.backStackEntryCount == 0) {
+                podcastRecyclerView.visibility = View.VISIBLE
+            }
+        }
     }
 }
