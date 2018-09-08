@@ -18,6 +18,7 @@ import self.edu.kurtis.podplay.service.ItunesService
 import kotlinx.android.synthetic.main.activity_podcast.*
 import self.edu.kurtis.podplay.adapter.PodcastListAdapter
 import self.edu.kurtis.podplay.repository.PodcastRepo
+import self.edu.kurtis.podplay.service.FeedService
 import self.edu.kurtis.podplay.viewmodel.PodcastViewModel
 import self.edu.kurtis.podplay.viewmodel.SearchViewModel
 
@@ -92,7 +93,8 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
         searchViewModel = ViewModelProviders.of(this).get(SearchViewModel::class.java)
         searchViewModel.iTunesRepo = ItunesRepo(service)
         podcastViewModel = ViewModelProviders.of(this).get(PodcastViewModel::class.java)
-        podcastViewModel.podcastRepo = PodcastRepo()
+        val rssService = FeedService.instance
+        podcastViewModel.podcastRepo = PodcastRepo(rssService)
     }
 
     private fun updateControls() {

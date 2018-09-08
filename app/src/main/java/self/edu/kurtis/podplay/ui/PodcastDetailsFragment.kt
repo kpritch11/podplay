@@ -3,14 +3,18 @@ package self.edu.kurtis.podplay.ui
 import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.support.v7.widget.LinearLayoutManager
+import android.text.method.ScrollingMovementMethod
 import android.view.*
 import com.bumptech.glide.Glide
 import kotlinx.android.synthetic.main.fragment_podcast_details.*
 import self.edu.kurtis.podplay.R
+import self.edu.kurtis.podplay.adapter.EpisodeListAdapter
 import self.edu.kurtis.podplay.viewmodel.PodcastViewModel
 
 class PodcastDetailsFragment : Fragment() {
     private lateinit var podcastViewModel: PodcastViewModel
+    private lateinit var episodeListAdapter: EpisodeListAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -24,6 +28,7 @@ class PodcastDetailsFragment : Fragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
+        setupControls()
         updateControls()
     }
 
@@ -47,5 +52,18 @@ class PodcastDetailsFragment : Fragment() {
         fun newInstance() : PodcastDetailsFragment {
             return PodcastDetailsFragment()
         }
+    }
+
+    private fun setupControls() {
+        feedDescTextView.movementMethod = ScrollingMovementMethod()
+        episodeRecyclerView.setHasFixedSize(true)
+
+        val layoutManager = LinearLayoutManager(activity)
+        episodeRecyclerView.layoutManager = layoutManager
+
+        val dividerItemDecoration = android.support.v7.widget.DividerItemDecoration(episodeRecyclerView.context, layoutManager.orientation)
+        episodeRecyclerView.addItemDecoration(dividerItemDecoration)
+        episodeListAdapter = EpisodeListAdapter(podcastViewModel.activePodcastViewData?.episodes)
+        episodeRecyclerView.adapter = episodeListAdapter
     }
 }
