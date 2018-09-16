@@ -20,6 +20,9 @@ interface PodcastDao {
     @Query("SELECT * FROM Episode WHERE podcastId = :podcastId ORDER BY releaseDate DESC")
     fun loadEpisodes(podcastId: Long): List<Episode>
 
+    @Query("SELECT * FROM Podcast ORDER BY FeedTitle")
+    fun loadPodcastsStatic(): List<Podcast>
+
     @Insert(onConflict = REPLACE)
     fun insertPodcast(podcast: Podcast): Long
 

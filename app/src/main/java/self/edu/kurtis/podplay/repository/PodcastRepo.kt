@@ -77,4 +77,50 @@ class PodcastRepo(private var feedService: FeedService, private var podcastDao: 
             podcastDao.deletePodcast(podcast)
         }
     }
+
+    private fun getNewEpisodes(localPodcast: Podcast, callback: (List<Episode>) -> Unit) {
+        feedService.getFeed(localPodcast.feedUrl) { response ->
+            if (response != null) {
+                val remotePodcast = rssResponseToPodcast(localPodcast.feedUrl, localPodcast.imageUrl, response!!)
+                remotePodcast?.let {
+                    val localEpisodes = podcastDao.loadEpisodes(localPodcast.id!!)
+                    val newEpisodes = remotePodcast.episodes.filter { episode ->
+                        localEpisodes.find { episode.guid == it.guid } == null
+                    }
+                    callback(newEpisodes)
+                }
+            } else {
+                callback(listOf())
+            }
+        }
+    }
+
+    private fun saveNewEpisodes(podcastId: Long, episodes: List<Episode>) {
+        launch (CommonPool) {
+            for (episode in episodes) {
+                episode.podcastId = podcastId
+                podcastDao.insertEpisode(episode)
+            }
+        }
+    }
+
+    class PodcastUpdateInfo(val feedUrl: String, val name: String, val newCount: Int)
+
+    fun updatePodcastEpisodes(callback: (List<PodcastUpdateInfo>) -> Unit) {
+        val updatedPodcasts: MutableList<PodcastUpdateInfo> = mutableListOf()
+        val podcasts = podcastDao.loadPodcastsStatic()
+        var processCount = podcasts.count()
+        for (podcast in podcasts) {
+            getNewEpisodes(podcast) { newEpisodes ->
+                if (newEpisodes.count() > 0) {
+                    saveNewEpisodes(podcast.id!!, newEpisodes)
+                    updatedPodcasts.add(PodcastUpdateInfo(podcast.feedUrl, podcast.feedTitle, newEpisodes.count()))
+                }
+                processCount--
+                if (processCount == 0) {
+                    callback(updatedPodcasts)
+                }
+            }
+        }
+    }
 }

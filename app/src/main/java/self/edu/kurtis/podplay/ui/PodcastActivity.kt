@@ -13,6 +13,7 @@ import android.view.Menu
 import android.support.v7.widget.SearchView
 import android.view.MenuItem
 import android.view.View
+import com.firebase.jobdispatcher.*
 import self.edu.kurtis.podplay.R
 import self.edu.kurtis.podplay.repository.ItunesRepo
 import self.edu.kurtis.podplay.service.ItunesService
@@ -20,6 +21,7 @@ import kotlinx.android.synthetic.main.activity_podcast.*
 import self.edu.kurtis.podplay.adapter.PodcastListAdapter
 import self.edu.kurtis.podplay.db.PodPlayDatabase
 import self.edu.kurtis.podplay.repository.PodcastRepo
+import self.edu.kurtis.podplay.service.EpisodeUpdateService
 import self.edu.kurtis.podplay.service.FeedService
 import self.edu.kurtis.podplay.viewmodel.PodcastViewModel
 import self.edu.kurtis.podplay.viewmodel.SearchViewModel
@@ -42,6 +44,7 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
         setupPodcastListView()
         handleIntent(intent)
         addBackStackListener()
+        scheduleJobs()
     }
 
     override fun onCreateOptionsMenu(menu: Menu) : Boolean {
@@ -88,6 +91,13 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
         if (Intent.ACTION_SEARCH == intent.action) {
             val query = intent.getStringExtra(SearchManager.QUERY)
             performSearch(query)
+        }
+
+        val podcastFeedUrl = intent.getStringExtra(EpisodeUpdateService.EXTRA_FEED_URL)
+        if (podcastFeedUrl != null) {
+            podcastViewModel.setActivePodcast(podcastFeedUrl) {
+                it?.let { podcastSummaryView -> onShowDetails(podcastSummaryView) }
+            }
         }
     }
 
@@ -148,6 +158,7 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
 
     companion object {
         private val TAG_DETAILS_FRAGMENT = "DetailsFragment"
+        private val TAG_EPISODE_UPDATE_JOB = "self.edu.kurtis.podplay.episodes"
     }
 
     private fun createPodcastDetailsFragment() : PodcastDetailsFragment {
@@ -205,5 +216,20 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
     override fun onUnsubscribe() {
         podcastViewModel.deleteActivePodcast()
         supportFragmentManager.popBackStack()
+    }
+
+    private fun scheduleJobs() {
+        val dispatcher = FirebaseJobDispatcher(GooglePlayDriver(this))
+        val oneHourInSeconds = 60*60
+        val tenMinutesInSeconds = 60*10
+        val episodeUpdateJob = dispatcher.newJobBuilder()
+                .setService(EpisodeUpdateService::class.java)
+                .setTag(TAG_EPISODE_UPDATE_JOB)
+                .setRecurring(true)
+                .setTrigger(Trigger.executionWindow(oneHourInSeconds, (oneHourInSeconds + tenMinutesInSeconds)))
+                .setLifetime(Lifetime.FOREVER)
+                .setConstraints(Constraint.ON_UNMETERED_NETWORK, Constraint.DEVICE_CHARGING)
+                .build()
+        dispatcher.mustSchedule(episodeUpdateJob)
     }
 }
