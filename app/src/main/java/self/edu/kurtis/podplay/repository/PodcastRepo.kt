@@ -13,14 +13,26 @@ import self.edu.kurtis.podplay.util.DateUtils
 
 class PodcastRepo(private var feedService: FeedService, private var podcastDao: PodcastDao) {
     fun getPodcast(feedUrl: String, callback: (Podcast?) -> Unit) {
-        feedService.getFeed(feedUrl) { feedResponse ->
-            var podcast: Podcast? = null
-            if (feedResponse != null) {
-                podcast = rssResponseToPodcast(feedUrl, "", feedResponse)
-            }
+        launch(CommonPool) {
+            val podcast = podcastDao.loadPodcast(feedUrl)
+            if (podcast != null) {
+                podcast.id?.let {
+                    podcast.episodes = podcastDao.loadEpisodes(it)
+                    launch(UI) {
+                        callback(podcast)
+                    }
+                }
+            } else {
+                feedService.getFeed(feedUrl) { feedResponse ->
+                    var podcast: Podcast? = null
+                    if (feedResponse != null) {
+                        podcast = rssResponseToPodcast(feedUrl, "", feedResponse)
+                    }
 
-            launch(UI) {
-                callback(podcast)
+                    launch(UI) {
+                        callback(podcast)
+                    }
+                }
             }
         }
     }
@@ -58,5 +70,11 @@ class PodcastRepo(private var feedService: FeedService, private var podcastDao: 
 
     fun getAll(): LiveData<List<Podcast>> {
         return podcastDao.loadPodcasts()
+    }
+
+    fun delete(podcast: Podcast) {
+        launch(CommonPool) {
+            podcastDao.deletePodcast(podcast)
+        }
     }
 }

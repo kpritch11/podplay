@@ -49,6 +49,16 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
         inflater.inflate(R.menu.menu_search, menu)
 
         searchMenuItem = menu.findItem(R.id.search_item)
+        searchMenuItem.setOnActionExpandListener(object: MenuItem.OnActionExpandListener {
+            override fun onMenuItemActionExpand(p0: MenuItem?): Boolean {
+                return true
+            }
+            override fun onMenuItemActionCollapse(p0: MenuItem?): Boolean {
+                showSubscribedPodcasts()
+                return true
+            }
+        })
+
         val searchView = searchMenuItem.actionView as SearchView
         val searchManager = getSystemService(Context.SEARCH_SERVICE) as SearchManager
 
@@ -190,5 +200,10 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
                 showSubscribedPodcasts()
             }
         })
+    }
+
+    override fun onUnsubscribe() {
+        podcastViewModel.deleteActivePodcast()
+        supportFragmentManager.popBackStack()
     }
 }
