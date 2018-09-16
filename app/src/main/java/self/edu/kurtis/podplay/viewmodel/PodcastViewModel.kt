@@ -2,14 +2,19 @@ package self.edu.kurtis.podplay.viewmodel
 
 import android.app.Application
 import android.arch.lifecycle.AndroidViewModel
+import android.arch.lifecycle.LiveData
+import android.arch.lifecycle.Transformations
 import self.edu.kurtis.podplay.model.Episode
 import self.edu.kurtis.podplay.model.Podcast
 import self.edu.kurtis.podplay.repository.PodcastRepo
+import self.edu.kurtis.podplay.util.DateUtils
 import java.util.*
 
 class PodcastViewModel(application: Application) : AndroidViewModel(application) {
     var podcastRepo: PodcastRepo? = null
     var activePodcastViewData: PodcastViewData? = null
+    private var activePodcast: Podcast? = null
+    var livePodcastData: LiveData<List<SearchViewModel.PodcastSummaryViewData>>? = null
 
     data class PodcastViewData(
             var subscribed: Boolean = false,
@@ -48,8 +53,39 @@ class PodcastViewModel(application: Application) : AndroidViewModel(application)
                 it.feedTitle = podcastSummaryViewData.name ?: ""
                 it.imageUrl = podcastSummaryViewData.imageUrl ?: ""
                 activePodcastViewData = podcastToPodcastView(it)
+                activePodcast = it
                 callback(activePodcastViewData)
             }
         }
+    }
+
+    fun saveActivePodcast() {
+        val repo = podcastRepo ?: return
+        activePodcast?.let {
+            repo.save(it)
+        }
+    }
+
+    private fun podcastToSummaryView(podcast:Podcast): SearchViewModel.PodcastSummaryViewData {
+        return SearchViewModel.PodcastSummaryViewData(
+                podcast.feedTitle,
+                DateUtils.dateToShortDate(podcast.lastUpdated),
+                podcast.imageUrl,
+                podcast.feedUrl
+        )
+    }
+
+    fun getPodcasts(): LiveData<List<SearchViewModel.PodcastSummaryViewData>>? {
+        val repo = podcastRepo ?: return null
+        if (livePodcastData == null) {
+            val liveData = repo.getAll()
+            livePodcastData = Transformations.map(liveData) { podcastList ->
+                podcastList.map { podcast ->
+                    podcastToSummaryView(podcast)
+                }
+            }
+        }
+
+        return livePodcastData
     }
 }

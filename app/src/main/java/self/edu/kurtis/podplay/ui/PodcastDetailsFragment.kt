@@ -1,6 +1,7 @@
 package self.edu.kurtis.podplay.ui
 
 import android.arch.lifecycle.ViewModelProviders
+import android.content.Context
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v7.widget.LinearLayoutManager
@@ -15,6 +16,7 @@ import self.edu.kurtis.podplay.viewmodel.PodcastViewModel
 class PodcastDetailsFragment : Fragment() {
     private lateinit var podcastViewModel: PodcastViewModel
     private lateinit var episodeListAdapter: EpisodeListAdapter
+    private var listener: OnPodcastDetailsListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -65,5 +67,30 @@ class PodcastDetailsFragment : Fragment() {
         episodeRecyclerView.addItemDecoration(dividerItemDecoration)
         episodeListAdapter = EpisodeListAdapter(podcastViewModel.activePodcastViewData?.episodes)
         episodeRecyclerView.adapter = episodeListAdapter
+    }
+
+    interface OnPodcastDetailsListener {
+        fun onSubscribe()
+    }
+
+    override fun onAttach(context: Context?) {
+        super.onAttach(context)
+        if (context is OnPodcastDetailsListener) {
+            listener = context
+        } else {
+            throw RuntimeException(context!!.toString() + " must implement OnPodcastDetailsListener")
+        }
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.menu_feed_action -> {
+                podcastViewModel.activePodcastViewData?.feedUrl?.let {
+                    listener?.onSubscribe()
+                }
+                return true
+            }
+            else -> return super.onOptionsItemSelected(item)
+        }
     }
 }
