@@ -19,8 +19,8 @@
                                   <option name="values">
                                     <map>
                                       <entry key="assetType" value="IMAGE" />
-                                      <entry key="imageAsset" value="$USER_HOME$/Assets/Ray Wenderlich/Android Apprentice/25-podcast-subscriptions-two/final/PodPlay/app/src/main/res/drawable-xxhdpi/ic_episode_icon.png" />
-                                      <entry key="outputName" value="ic_episode_icon" />
+                                      <entry key="imageAsset" value="$USER_HOME$/Assets/Ray Wenderlich/Android Apprentice/26-podcast-playback/final/PodPlay/app/src/main/res/drawable-xxhdpi/ic_play_arrow_white.png" />
+                                      <entry key="outputName" value="ic_play_arrow_white" />
                                     </map>
                                   </option>
                                 </PersistentState>

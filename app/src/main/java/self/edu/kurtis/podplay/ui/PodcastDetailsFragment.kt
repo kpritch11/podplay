@@ -1,9 +1,15 @@
 package self.edu.kurtis.podplay.ui
 
 import android.arch.lifecycle.ViewModelProviders
+import android.content.ComponentName
 import android.content.Context
 import android.os.Bundle
 import android.support.v4.app.Fragment
+import android.support.v4.media.MediaBrowserCompat
+import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.MediaSessionCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import android.support.v7.widget.LinearLayoutManager
 import android.text.method.ScrollingMovementMethod
 import android.view.*
@@ -11,6 +17,7 @@ import com.bumptech.glide.Glide
 import kotlinx.android.synthetic.main.fragment_podcast_details.*
 import self.edu.kurtis.podplay.R
 import self.edu.kurtis.podplay.adapter.EpisodeListAdapter
+import self.edu.kurtis.podplay.service.PodplayMediaService
 import self.edu.kurtis.podplay.viewmodel.PodcastViewModel
 
 class PodcastDetailsFragment : Fragment() {
@@ -18,11 +25,14 @@ class PodcastDetailsFragment : Fragment() {
     private lateinit var episodeListAdapter: EpisodeListAdapter
     private var listener: OnPodcastDetailsListener? = null
     private var menuItem: MenuItem? = null
+    private lateinit var mediaBrowser: MediaBrowserCompat
+    private var mediaControllerCallback: MediaControllerCallback? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setHasOptionsMenu(true)
         setupViewModel()
+        initMediaBrowser()
     }
 
     override fun onCreateView(inflater: LayoutInflater?, container: ViewGroup?, savedInstanceState: Bundle?) : View? {
@@ -105,5 +115,64 @@ class PodcastDetailsFragment : Fragment() {
     private fun updateMenuItem() {
         val viewData = podcastViewModel.activePodcastViewData ?: return
         menuItem?.title = if (viewData.subscribed) getString(R.string.unsubscribe) else getString(R.string.subscribe)
+    }
+
+    inner class MediaControllerCallback: MediaControllerCompat.Callback() {
+        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
+            println("metadata changed to ${metadata?.getString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI)}")
+        }
+
+        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
+            println("state changed to $state")
+        }
+    }
+
+    private fun registerMediaController(token: MediaSessionCompat.Token) {
+        val mediaController = MediaControllerCompat(activity, token)
+        MediaControllerCompat.setMediaController(activity, mediaController)
+        mediaControllerCallback = MediaControllerCallback()
+        mediaController.registerCallback(mediaControllerCallback!!)
+    }
+
+    inner class MediaBrowserCallbacks: MediaBrowserCompat.ConnectionCallback() {
+        override fun onConnected() {
+            super.onConnected()
+            registerMediaController(mediaBrowser.sessionToken)
+            println("onConnected")
+        }
+
+        override fun onConnectionSuspended() {
+            super.onConnectionSuspended()
+            println("onConnectionSuspended")
+        }
+
+        override fun onConnectionFailed() {
+            super.onConnectionFailed()
+            println("onConnectionFailed")
+        }
+    }
+
+    private fun initMediaBrowser() {
+        mediaBrowser = MediaBrowserCompat(activity, ComponentName(activity, PodplayMediaService::class.java), MediaBrowserCallbacks(), null)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        if (mediaBrowser.isConnected) {
+            if (MediaControllerCompat.getMediaController(activity) == null) {
+                registerMediaController(mediaBrowser.sessionToken)
+            }
+        } else {
+            mediaBrowser.connect()
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (MediaControllerCompat.getMediaController(activity) != null) {
+            mediaControllerCallback?.let {
+                MediaControllerCompat.getMediaController(activity).unregisterCallback(it)
+            }
+        }
     }
 }
