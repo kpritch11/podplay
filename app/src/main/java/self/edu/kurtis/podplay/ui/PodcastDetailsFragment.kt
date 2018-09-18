@@ -3,6 +3,7 @@ package self.edu.kurtis.podplay.ui
 import android.arch.lifecycle.ViewModelProviders
 import android.content.ComponentName
 import android.content.Context
+import android.net.Uri
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.support.v4.media.MediaBrowserCompat
@@ -20,7 +21,7 @@ import self.edu.kurtis.podplay.adapter.EpisodeListAdapter
 import self.edu.kurtis.podplay.service.PodplayMediaService
 import self.edu.kurtis.podplay.viewmodel.PodcastViewModel
 
-class PodcastDetailsFragment : Fragment() {
+class PodcastDetailsFragment : Fragment(), EpisodeListAdapter.EpisodeListAdapterListener {
     private lateinit var podcastViewModel: PodcastViewModel
     private lateinit var episodeListAdapter: EpisodeListAdapter
     private var listener: OnPodcastDetailsListener? = null
@@ -78,7 +79,7 @@ class PodcastDetailsFragment : Fragment() {
 
         val dividerItemDecoration = android.support.v7.widget.DividerItemDecoration(episodeRecyclerView.context, layoutManager.orientation)
         episodeRecyclerView.addItemDecoration(dividerItemDecoration)
-        episodeListAdapter = EpisodeListAdapter(podcastViewModel.activePodcastViewData?.episodes)
+        episodeListAdapter = EpisodeListAdapter(podcastViewModel.activePodcastViewData?.episodes, this)
         episodeRecyclerView.adapter = episodeListAdapter
     }
 
@@ -173,6 +174,24 @@ class PodcastDetailsFragment : Fragment() {
             mediaControllerCallback?.let {
                 MediaControllerCompat.getMediaController(activity).unregisterCallback(it)
             }
+        }
+    }
+
+    private fun startPlaying(episodeViewData: PodcastViewModel.EpisodeViewData) {
+        val controller = MediaControllerCompat.getMediaController(activity)
+        controller.transportControls.playFromUri(Uri.parse(episodeViewData.mediaUrl), null)
+    }
+
+    override fun onSelectedEpisode(episodeViewData: PodcastViewModel.EpisodeViewData) {
+        var controller = MediaControllerCompat.getMediaController(activity)
+        if (controller.playbackState != null) {
+            if (controller.playbackState.state == PlaybackStateCompat.STATE_PLAYING) {
+                controller.transportControls.pause()
+            } else {
+                startPlaying(episodeViewData)
+            }
+        } else {
+            startPlaying(episodeViewData)
         }
     }
 }
