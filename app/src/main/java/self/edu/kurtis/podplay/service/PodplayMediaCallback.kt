@@ -13,6 +13,7 @@ class PodplayMediaCallback(val context: Context, val mediaSession: MediaSessionC
     private var mediaUri: Uri? = null
     private var newMedia: Boolean = false
     private var mediaExtras: Bundle? = null
+    var listener: PodplayMediaListener? = null
 
     override fun onPlayFromUri(uri: Uri?, extras: Bundle?) {
         super.onPlayFromUri(uri, extras)
@@ -57,6 +58,9 @@ class PodplayMediaCallback(val context: Context, val mediaSession: MediaSessionC
                 .setState(state, position, 1.0f)
                 .build()
         mediaSession.setPlaybackState(playbackState)
+        if (state == PlaybackStateCompat.STATE_PAUSED || state == PlaybackStateCompat.STATE_PLAYING) {
+            listener?.onStateChanged()
+        }
     }
 
     private fun setNewMedia(uri: Uri?) {
@@ -92,9 +96,13 @@ class PodplayMediaCallback(val context: Context, val mediaSession: MediaSessionC
                     mediaPlayer.reset()
                     mediaPlayer.setDataSource(context, mediaUri)
                     mediaPlayer.prepare()
-                    mediaSession.setMetadata(MediaMetadataCompat.Builder()
-                            .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, mediaUri.toString())
-                            .build())
+                    mediaExtras?.let { mediaExtras ->
+                        mediaSession.setMetadata(MediaMetadataCompat.Builder()
+                                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, mediaExtras.getString(MediaMetadataCompat.METADATA_KEY_TITLE))
+                                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, mediaExtras.getString(MediaMetadataCompat.METADATA_KEY_ARTIST))
+                                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, mediaExtras.getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI))
+                                .build())
+                    }
                 }
             }
         }
@@ -117,6 +125,7 @@ class PodplayMediaCallback(val context: Context, val mediaSession: MediaSessionC
                 setState(PlaybackStateCompat.STATE_PAUSED)
             }
         }
+        listener?.onPausePlaying()
     }
 
     private fun stopPlaying() {
@@ -128,5 +137,12 @@ class PodplayMediaCallback(val context: Context, val mediaSession: MediaSessionC
                 setState(PlaybackStateCompat.STATE_STOPPED)
             }
         }
+        listener?.onStopPlaying()
+    }
+
+    interface PodplayMediaListener {
+        fun onStateChanged()
+        fun onStopPlaying()
+        fun onPausePlaying()
     }
 }
