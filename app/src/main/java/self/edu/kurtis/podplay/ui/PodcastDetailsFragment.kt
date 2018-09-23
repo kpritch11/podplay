@@ -86,6 +86,7 @@ class PodcastDetailsFragment : Fragment(), EpisodeListAdapter.EpisodeListAdapter
     interface OnPodcastDetailsListener {
         fun onSubscribe()
         fun onUnsubscribe()
+        fun onShowEpisodePlayer(episodeViewData: PodcastViewModel.EpisodeViewData)
     }
 
     override fun onAttach(context: Context?) {
@@ -188,15 +189,6 @@ class PodcastDetailsFragment : Fragment(), EpisodeListAdapter.EpisodeListAdapter
     }
 
     override fun onSelectedEpisode(episodeViewData: PodcastViewModel.EpisodeViewData) {
-        var controller = MediaControllerCompat.getMediaController(activity)
-        if (controller.playbackState != null) {
-            if (controller.playbackState.state == PlaybackStateCompat.STATE_PLAYING) {
-                controller.transportControls.pause()
-            } else {
-                startPlaying(episodeViewData)
-            }
-        } else {
-            startPlaying(episodeViewData)
-        }
+        listener?.onShowEpisodePlayer(episodeViewData)
     }
 }

@@ -159,6 +159,7 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
     companion object {
         private val TAG_DETAILS_FRAGMENT = "DetailsFragment"
         private val TAG_EPISODE_UPDATE_JOB = "self.edu.kurtis.podplay.episodes"
+        private const val TAG_PLAYER_FRAGMENT = "PlayerFragment"
     }
 
     private fun createPodcastDetailsFragment() : PodcastDetailsFragment {
@@ -231,5 +232,29 @@ class PodcastActivity : AppCompatActivity(), PodcastListAdapter.PodcastListAdapt
                 .setConstraints(Constraint.ON_UNMETERED_NETWORK, Constraint.DEVICE_CHARGING)
                 .build()
         dispatcher.mustSchedule(episodeUpdateJob)
+    }
+
+    override fun onShowEpisodePlayer(episodeViewData: PodcastViewModel.EpisodeViewData) {
+        podcastViewModel.activeEpisodeViewData = episodeViewData
+        showPlayerFragment()
+    }
+
+    private fun createEpisodePlayerFragment(): EpisodePlayerFragment {
+        var episodePlayerFragment = supportFragmentManager.findFragmentByTag(TAG_PLAYER_FRAGMENT) as EpisodePlayerFragment?
+        if (episodePlayerFragment == null) {
+            episodePlayerFragment = EpisodePlayerFragment.newInstance()
+        }
+        return episodePlayerFragment
+    }
+
+    private fun showPlayerFragment() {
+        val episodePlayerFragment = createEpisodePlayerFragment()
+        supportFragmentManager.beginTransaction().replace(
+                R.id.podcastDetailsContainer,
+                episodePlayerFragment,
+                TAG_PLAYER_FRAGMENT
+        ).addToBackStack("PlayerFragment").commit()
+        podcastRecyclerView.visibility = View.INVISIBLE
+        searchMenuItem.isVisible = false
     }
 }
