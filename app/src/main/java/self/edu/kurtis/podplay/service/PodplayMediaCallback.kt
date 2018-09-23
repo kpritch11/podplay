@@ -126,6 +126,7 @@ class PodplayMediaCallback(val context: Context, val mediaSession: MediaSessionC
                                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, mediaExtras.getString(MediaMetadataCompat.METADATA_KEY_TITLE))
                                 .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, mediaExtras.getString(MediaMetadataCompat.METADATA_KEY_ARTIST))
                                 .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, mediaExtras.getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI))
+                                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, mediaPlayer.duration.toLong())
                                 .build())
                     }
                 }
