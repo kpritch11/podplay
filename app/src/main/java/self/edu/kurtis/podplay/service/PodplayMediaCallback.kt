@@ -16,6 +16,7 @@ class PodplayMediaCallback(val context: Context, val mediaSession: MediaSessionC
     private var newMedia: Boolean = false
     private var mediaExtras: Bundle? = null
     var listener: PodplayMediaListener? = null
+    private var mediaNeedsPrepare: Boolean = false
 
     override fun onPlayFromUri(uri: Uri?, extras: Bundle?) {
         super.onPlayFromUri(uri, extras)
@@ -110,6 +111,7 @@ class PodplayMediaCallback(val context: Context, val mediaSession: MediaSessionC
             mediaPlayer!!.setOnCompletionListener() {
                 setState(PlaybackStateCompat.STATE_PAUSED)
             }
+            mediaNeedsPrepare = true
         }
     }
 
@@ -118,9 +120,11 @@ class PodplayMediaCallback(val context: Context, val mediaSession: MediaSessionC
             newMedia = false
             mediaPlayer?.let { mediaPlayer ->
                 mediaUri?.let {
-                    mediaPlayer.reset()
-                    mediaPlayer.setDataSource(context, mediaUri)
-                    mediaPlayer.prepare()
+                    if (mediaNeedsPrepare) {
+                        mediaPlayer.reset()
+                        mediaPlayer.setDataSource(context, mediaUri)
+                        mediaPlayer.prepare()
+                    }
                     mediaExtras?.let { mediaExtras ->
                         mediaSession.setMetadata(MediaMetadataCompat.Builder()
                                 .putString(MediaMetadataCompat.METADATA_KEY_TITLE, mediaExtras.getString(MediaMetadataCompat.METADATA_KEY_TITLE))
